@@ -50,11 +50,11 @@ public class User {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return primaryKey == user.primaryKey && Objects.equals(id, user.id) && Objects.equals(email, user.email) && Objects.equals(password, user.password) && Objects.equals(name, user.name);
+        return primaryKey == user.primaryKey && Objects.equals(id, user.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(primaryKey, id, email, password, name);
+        return Objects.hash(primaryKey, id);
     }
 }

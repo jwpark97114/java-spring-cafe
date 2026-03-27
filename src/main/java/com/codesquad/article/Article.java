@@ -2,8 +2,12 @@ package com.codesquad.article;
 
 import com.codesquad.user.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
+@SQLRestriction("deleted = false")
+@SQLDelete(sql = "UPDATE articles SET deleted = true WHERE id = ?")
 @Table(name = "Articles")
 public class Article {
 
@@ -16,6 +20,19 @@ public class Article {
     private String author;
     private String title;
     private String content;
+    private boolean deleted = false;
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
 
     public String getAuthor() {
         return author;

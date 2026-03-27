@@ -1,7 +1,9 @@
 package com.codesquad.cafeController;
 
 import com.codesquad.article.Article;
+import com.codesquad.reply.Reply;
 import com.codesquad.service.ArticleService;
+import com.codesquad.service.ReplyService;
 import com.codesquad.user.User;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +16,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/qna")
 public class ArticleController {
 
+    private final ArticleService service;
+    private final ReplyService replyService;
+
     @Autowired
-    ArticleService service;
+    public ArticleController(ArticleService as, ReplyService rs){
+        this.service = as;
+        this.replyService=rs;
+    }
 
     @GetMapping("/")
     public String getQna(Model model){
@@ -54,6 +62,7 @@ public class ArticleController {
         }
 
         model.addAttribute("article", service.findArticleById(articleId));
+        model.addAttribute("comments", replyService.findRepliesForArticle(articleId));
         return "qna/questionDetail";
     }
 
@@ -94,7 +103,29 @@ public class ArticleController {
         return "redirect:/qna/";
     }
 
+    @PostMapping("/{id}/comments")
+    public String addComment(@PathVariable int id, @SessionAttribute(value="currentUser", required = false) User user, @RequestParam(name = "commentContent") String content){
+        if(user == null){
+            return "redirect:/user/login";
+        }
+        Article article = this.service.findArticleById(id);
+        System.out.println(content);
+        if(article == null){
+            return "redirect:/qna/";
+        }
+        this.replyService.addReply(article, user, content);
+        return "redirect:/qna/"+id;
+    }
 
+    @DeleteMapping("/{articleId}/comments/{commentId}/delete")
+    public String removeComment(@PathVariable int articleId, @PathVariable long commentId, @SessionAttribute(name = "currentUser", required = true) User user){
+        Reply targetReply = this.replyService.findReplyById(commentId);
+        if(!targetReply.getUser().equals(user)){
+            return "redirect:/qna/"+articleId;
+        }
+        this.replyService.removeReply(commentId);
+        return "redirect:/qna/"+articleId;
+    }
 
 
 
