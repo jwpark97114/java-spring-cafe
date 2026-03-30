@@ -127,6 +127,7 @@ public class ArticleController {
         return "redirect:/qna/"+articleId;
     }
 
-
-
 }
+
+// The point to improve is not making lazy fetch on User class in article
+// In fact loading article with its whole context is more dangerous than eager fetching of users

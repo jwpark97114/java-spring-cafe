@@ -84,7 +84,6 @@ public class UserController {
 
     }
 
-    // thymeleaf 없이 어떻게 잘못된 비밀번호 입력시 리다이렉션이나 에러를 표시할 수 있을까?
     @PutMapping("/users/{id}/edit")
     public String putUserInfoMod(@PathVariable String id, UserUpdateForm form, Model model, RedirectAttributes redirectAttrs, HttpSession session){
 
