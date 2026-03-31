@@ -1,6 +1,7 @@
 package com.codesquad.cafeController;
 
 import com.codesquad.service.UserService;
+import com.codesquad.user.LoginRequired;
 import com.codesquad.user.User;
 import com.codesquad.user.UserUpdateForm;
 import jakarta.servlet.http.HttpSession;
@@ -67,11 +68,9 @@ public class UserController {
         return "user/userDetail";
     }
 
+    @LoginRequired
     @GetMapping("/users/{id}/edit")
     public String getUserInfoModPage(@PathVariable String id, Model model, HttpSession session, RedirectAttributes redirectAttribute){
-        if(session.getAttribute("currentUser") == null){
-            return "redirect:/user/login";
-        }
 
         if((session.getAttribute("currentUser")).equals(service.findUserById(id))){
             model.addAttribute("user",service.findUserById(id));
@@ -84,12 +83,9 @@ public class UserController {
 
     }
 
+    @LoginRequired
     @PutMapping("/users/{id}/edit")
     public String putUserInfoMod(@PathVariable String id, UserUpdateForm form, Model model, RedirectAttributes redirectAttrs, HttpSession session){
-
-        if(session.getAttribute("currentUser") == null){
-            return "redirect:/user/login";
-        }
 
         User existingUser = service.findUserById(id);
 

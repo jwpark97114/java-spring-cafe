@@ -4,6 +4,7 @@ import com.codesquad.article.Article;
 import com.codesquad.reply.Reply;
 import com.codesquad.service.ArticleService;
 import com.codesquad.service.ReplyService;
+import com.codesquad.user.LoginRequired;
 import com.codesquad.user.User;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,46 +32,37 @@ public class ArticleController {
         return "qna/qnaList";
     }
 
+    @LoginRequired
     @GetMapping("/question")
-    public String getQuestionForm(@SessionAttribute(value="currentUser", required=false) User currentUser, Model model){
-        if(currentUser == null){
-            return "redirect:/user/login";
-        }
+    public String getQuestionForm(Model model){
+
         Article targetArticle = new Article();
         model.addAttribute("article", targetArticle);
         model.addAttribute("formActionUrl", "/qna/question");
         return "qna/submitQuestion";
     }
 
+    @LoginRequired
     @PostMapping("/question")
     public String postQuestionForm(@ModelAttribute Article article, @SessionAttribute(value="currentUser", required=false) User currentUser){
-        if(currentUser == null){
-            return "redirect:/user/login";
-        }
         article.setUser(currentUser);
         article.setAuthor();
         service.putNewArticle(article);
         return "redirect:/qna/";
     }
 
+    @LoginRequired(message = "Please Log In to Read Questions")
     @GetMapping("/{articleId}")
-    public String getArticleDetail(@PathVariable int articleId, Model model, @SessionAttribute(value="currentUser", required=false) User currentUser, RedirectAttributes redirectAttributes){
-
-        if(currentUser == null){
-            redirectAttributes.addFlashAttribute("errorMessage", "Please Log In to Read Questions");
-            return "redirect:/user/login";
-        }
-
+    public String getArticleDetail(@PathVariable int articleId, Model model){
         model.addAttribute("article", service.findArticleById(articleId));
         model.addAttribute("comments", replyService.findRepliesForArticle(articleId));
         return "qna/questionDetail";
     }
 
+    @LoginRequired
     @GetMapping("/{id}/edit")
     public String getEditPageForArticle(@PathVariable int id, @SessionAttribute(value="currentUser", required=false) User currentUser, Model model, RedirectAttributes ra){
-        if(currentUser == null){
-            return "redirect:/user/login";
-        }
+
         Article targetArticle = service.findArticleById(id);
         if(targetArticle.getUser().equals(currentUser)){
             model.addAttribute("article", targetArticle);
@@ -84,6 +76,7 @@ public class ArticleController {
 
     }
 
+    @LoginRequired
     @PostMapping("/{id}/edit")
     public String postEditedArticle(@PathVariable int id, @SessionAttribute(value="currentUser", required=false) User currentUser, @ModelAttribute Article article){
         article.setUser(currentUser);
@@ -92,6 +85,7 @@ public class ArticleController {
         return "redirect:/qna/"+id;
     }
 
+    @LoginRequired
     @DeleteMapping("/{id}/delete")
     public String deleteArticle(@PathVariable int id, @SessionAttribute(value="currentUser", required=false) User currentUser, RedirectAttributes ra){
         Article targetArticle = service.findArticleById(id);
@@ -103,11 +97,9 @@ public class ArticleController {
         return "redirect:/qna/";
     }
 
+    @LoginRequired
     @PostMapping("/{id}/comments")
     public String addComment(@PathVariable int id, @SessionAttribute(value="currentUser", required = false) User user, @RequestParam(name = "commentContent") String content){
-        if(user == null){
-            return "redirect:/user/login";
-        }
         Article article = this.service.findArticleById(id);
         System.out.println(content);
         if(article == null){
@@ -117,6 +109,7 @@ public class ArticleController {
         return "redirect:/qna/"+id;
     }
 
+    @LoginRequired
     @DeleteMapping("/{articleId}/comments/{commentId}/delete")
     public String removeComment(@PathVariable int articleId, @PathVariable long commentId, @SessionAttribute(name = "currentUser", required = true) User user){
         Reply targetReply = this.replyService.findReplyById(commentId);
