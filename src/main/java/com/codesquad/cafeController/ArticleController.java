@@ -63,16 +63,10 @@ public class ArticleController {
     @GetMapping("/{id}/edit")
     public String getEditPageForArticle(@PathVariable int id, @SessionAttribute(value="currentUser", required=false) User currentUser, Model model, RedirectAttributes ra){
 
-        Article targetArticle = service.findArticleById(id);
-        if(targetArticle.getUser().equals(currentUser)){
-            model.addAttribute("article", targetArticle);
-            model.addAttribute("formActionUrl", "/qna/"+id+"/edit");
-            return "qna/submitQuestion";
-        }
-        else{
-            ra.addFlashAttribute("errorMessage", "YOU CANNOT EDIT OTHER'S ARTICLE");
-            return "redirect:/qna/";
-        }
+        Article targetArticle = service.findArticleForEdit(id,currentUser);
+        model.addAttribute("article", targetArticle);
+        model.addAttribute("formActionUrl", "/qna/"+id+"/edit");
+        return "qna/submitQuestion";
 
     }
 
@@ -88,11 +82,7 @@ public class ArticleController {
     @LoginRequired
     @DeleteMapping("/{id}/delete")
     public String deleteArticle(@PathVariable int id, @SessionAttribute(value="currentUser", required=false) User currentUser, RedirectAttributes ra){
-        Article targetArticle = service.findArticleById(id);
-        if(!targetArticle.getUser().equals(currentUser)){
-            ra.addFlashAttribute("errorMessage", "YOU CANNOT DELETE OTHER'S ARTICLE");
-            return "redirect:/qna/";
-        }
+        Article targetArticle = service.findArticleForEdit(id,currentUser);
         service.deleteArticle(targetArticle, currentUser);
         return "redirect:/qna/";
     }
@@ -101,10 +91,6 @@ public class ArticleController {
     @PostMapping("/{id}/comments")
     public String addComment(@PathVariable int id, @SessionAttribute(value="currentUser", required = false) User user, @RequestParam(name = "commentContent") String content){
         Article article = this.service.findArticleById(id);
-        System.out.println(content);
-        if(article == null){
-            return "redirect:/qna/";
-        }
         this.replyService.addReply(article, user, content);
         return "redirect:/qna/"+id;
     }
@@ -112,11 +98,8 @@ public class ArticleController {
     @LoginRequired
     @DeleteMapping("/{articleId}/comments/{commentId}/delete")
     public String removeComment(@PathVariable int articleId, @PathVariable long commentId, @SessionAttribute(name = "currentUser", required = true) User user){
-        Reply targetReply = this.replyService.findReplyById(commentId);
-        if(!targetReply.getUser().equals(user)){
-            return "redirect:/qna/"+articleId;
-        }
-        this.replyService.removeReply(commentId);
+        Reply targetReply = this.replyService.findReplyToEditById(commentId, user,"/qna/"+articleId);
+        this.replyService.removeReply(targetReply.getId());
         return "redirect:/qna/"+articleId;
     }
 

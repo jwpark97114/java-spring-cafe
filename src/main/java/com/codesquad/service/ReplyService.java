@@ -2,6 +2,7 @@ package com.codesquad.service;
 
 import com.codesquad.article.Article;
 import com.codesquad.cafeRepo.JpaReplyRepo;
+import com.codesquad.exceptions.ForbiddenAccessException;
 import com.codesquad.reply.Reply;
 import com.codesquad.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,16 @@ public class ReplyService {
 
     public Reply findReplyById(long id){
         return this.repo.findById(id).get();
+    }
+
+    public Reply findReplyToEditById(long id, User user, String redirectUrl){
+        Reply targetReply = this.repo.findById(id).orElse(null);
+
+        if(targetReply == null || !(targetReply.getUser().equals(user))){
+            throw new ForbiddenAccessException(redirectUrl,"YOU CANNOT EDIT OTHERS REPLY");
+        }
+
+        return targetReply;
     }
 
     public void removeReply(long id){

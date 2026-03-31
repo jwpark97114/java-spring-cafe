@@ -3,6 +3,7 @@ package com.codesquad.service;
 import com.codesquad.article.Article;
 import com.codesquad.cafeRepo.ArticleRepo;
 import com.codesquad.cafeRepo.JpaArticleRepo;
+import com.codesquad.exceptions.ForbiddenAccessException;
 import com.codesquad.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,6 +34,15 @@ public class ArticleService {
         if(targetArticle.getUser().equals(sessionUser)){
             repo.delete(targetArticle);
         }
+    }
+
+    public Article findArticleForEdit(int id, User currentUser){
+        Article foundArticle = this.repo.findArticleById(id);
+
+        if(foundArticle == null || (!foundArticle.getUser().equals(currentUser))){
+            throw new ForbiddenAccessException(null,"YOU ARE ONLY ALLOWED TO MODIFY YOUR OWN POSTS");
+        }
+        return foundArticle;
     }
 
 }
