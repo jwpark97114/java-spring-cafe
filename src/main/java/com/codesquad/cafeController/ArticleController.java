@@ -6,7 +6,6 @@ import com.codesquad.service.ArticleService;
 import com.codesquad.service.ReplyService;
 import com.codesquad.user.LoginRequired;
 import com.codesquad.user.User;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,7 +34,6 @@ public class ArticleController {
     @LoginRequired
     @GetMapping("/question")
     public String getQuestionForm(Model model){
-
         Article targetArticle = new Article();
         model.addAttribute("article", targetArticle);
         model.addAttribute("formActionUrl", "/qna/question");
@@ -45,9 +43,7 @@ public class ArticleController {
     @LoginRequired
     @PostMapping("/question")
     public String postQuestionForm(@ModelAttribute Article article, @SessionAttribute(value="currentUser", required=false) User currentUser){
-        article.setUser(currentUser);
-        article.setAuthor();
-        service.putNewArticle(article);
+        service.putNewArticle(currentUser, article);
         return "redirect:/qna/";
     }
 
@@ -62,7 +58,6 @@ public class ArticleController {
     @LoginRequired
     @GetMapping("/{id}/edit")
     public String getEditPageForArticle(@PathVariable int id, @SessionAttribute(value="currentUser", required=false) User currentUser, Model model, RedirectAttributes ra){
-
         Article targetArticle = service.findArticleForEdit(id,currentUser);
         model.addAttribute("article", targetArticle);
         model.addAttribute("formActionUrl", "/qna/"+id+"/edit");
@@ -73,9 +68,7 @@ public class ArticleController {
     @LoginRequired
     @PostMapping("/{id}/edit")
     public String postEditedArticle(@PathVariable int id, @SessionAttribute(value="currentUser", required=false) User currentUser, @ModelAttribute Article article){
-        article.setUser(currentUser);
-        article.setAuthor();
-        service.putNewArticle(article);
+        service.putNewArticle(currentUser, article);
         return "redirect:/qna/"+id;
     }
 
@@ -98,7 +91,7 @@ public class ArticleController {
     @LoginRequired
     @DeleteMapping("/{articleId}/comments/{commentId}/delete")
     public String removeComment(@PathVariable int articleId, @PathVariable long commentId, @SessionAttribute(name = "currentUser", required = true) User user){
-        Reply targetReply = this.replyService.findReplyToEditById(commentId, user,"/qna/"+articleId);
+        Reply targetReply = this.replyService.findReplyToEditById(commentId, user);
         this.replyService.removeReply(targetReply.getId());
         return "redirect:/qna/"+articleId;
     }

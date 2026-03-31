@@ -29,11 +29,11 @@ public class ReplyService {
         return this.repo.findById(id).get();
     }
 
-    public Reply findReplyToEditById(long id, User user, String redirectUrl){
+    public Reply findReplyToEditById(long id, User user){
         Reply targetReply = this.repo.findById(id).orElse(null);
 
         if(targetReply == null || !(targetReply.getUser().equals(user))){
-            throw new ForbiddenAccessException(redirectUrl,"YOU CANNOT EDIT OTHERS REPLY");
+            throw new ForbiddenAccessException("YOU CANNOT EDIT OTHERS REPLY");
         }
 
         return targetReply;

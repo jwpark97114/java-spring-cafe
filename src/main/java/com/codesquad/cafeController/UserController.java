@@ -31,17 +31,10 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public String logInWithCredentials(@ModelAttribute User user, HttpSession session, RedirectAttributes redirection){
-
-        if(service.verifyUserCredentials(user)){
-            User targetUser = service.findUserById(user.getId());
-            session.setAttribute("currentUser", targetUser);
-            return "redirect:/";
-        }
-        else{
-            redirection.addFlashAttribute("errorMessage", "User Credentials Does Not Match");
-            return "redirect:/user/login";
-        }
+    public String logInWithCredentials(@ModelAttribute User user, HttpSession session){
+        User validatedUser = this.service.login(user);
+        session.setAttribute("currentUser", validatedUser);
+        return "redirect:/";
     }
 
     @GetMapping("/signup")
@@ -70,34 +63,20 @@ public class UserController {
 
     @LoginRequired
     @GetMapping("/users/{id}/edit")
-    public String getUserInfoModPage(@PathVariable String id, Model model, HttpSession session, RedirectAttributes redirectAttribute){
-
-        if((session.getAttribute("currentUser")).equals(service.findUserById(id))){
-            model.addAttribute("user",service.findUserById(id));
-            return "user/editProfile";
-        }
-        else{
-            redirectAttribute.addFlashAttribute("errorMessage", "YOU CANNOT MODIFY OTHER'S PROFILE");
-            return "redirect:/user/users";
-        }
+    public String getUserInfoModPage(@PathVariable String id, Model model, HttpSession session){
+        User user = service.findUserForUpdate(id, (User)session.getAttribute("currentUser"));
+        model.addAttribute("user",user);
+        return "user/editProfile";
 
     }
 
     @LoginRequired
     @PutMapping("/users/{id}/edit")
-    public String putUserInfoMod(@PathVariable String id, UserUpdateForm form, Model model, RedirectAttributes redirectAttrs, HttpSession session){
-
-        User existingUser = service.findUserById(id);
-
-        if(session.getAttribute("currentUser").equals(existingUser) && service.updateUserProfile(existingUser.getId(), form)){
-            session.setAttribute("currentUser", existingUser);
-            model.addAttribute("user", session.getAttribute("currentUser"));
-            return "user/userDetail";
-        }
-        else{
-            redirectAttrs.addFlashAttribute("errorMessage", "Incorrect Credentials. Please try again");
-            return "redirect:/user/users/{id}/edit";
-        }
+    public String putUserInfoMod(@PathVariable String id, UserUpdateForm form, Model model, HttpSession session){
+        User updatedUser = service.updateUserProfile(id, form);
+        session.setAttribute("currentUser", updatedUser);
+        model.addAttribute("user", session.getAttribute("currentUser"));
+        return "user/userDetail";
     }
 
     @GetMapping("/logout")

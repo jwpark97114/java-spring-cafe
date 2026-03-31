@@ -225,12 +225,28 @@
             text-align: center;
             padding: 1rem 0;
         }
+        .error-banner {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border: 1px solid #ef9a9a;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
 <div th:replace="~{fragments/header :: main-header}"></div>
 <div class="main-content">
     <div class="article-card">
+
+        <div th:if="${errorMessage}" class="error-banner">
+            <span th:text="${errorMessage}"> ERROR MESSAGE</span>
+        </div>
+
         <div class="article-meta">
             Question #<span th:text="${article.id}">1</span>
             By <span th:text="${article.author}" style="color: #4e342e;">doe</span>

@@ -117,6 +117,17 @@
         .btn-return:hover {
             background-color: #6d4c41;
         }
+        .error-banner {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border: 1px solid #ef9a9a;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -125,6 +136,9 @@
 <div class="main-content">
 <div class="profile-card">
 
+    <div th:if="${errorMessage}" class="error-banner">
+        <span th:text="${errorMessage}"> ERROR MESSAGE</span>
+    </div>
 
 
     <div class="avatar">☕</div>

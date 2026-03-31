@@ -22,7 +22,9 @@ public class ArticleService {
         return repo.findAll();
     }
 
-    public void putNewArticle(Article newArticle){
+    public void putNewArticle(User currentUser, Article newArticle){
+        newArticle.setUser(currentUser);
+        newArticle.setAuthor();
         repo.save(newArticle);
     }
 
@@ -40,7 +42,7 @@ public class ArticleService {
         Article foundArticle = this.repo.findArticleById(id);
 
         if(foundArticle == null || (!foundArticle.getUser().equals(currentUser))){
-            throw new ForbiddenAccessException(null,"YOU ARE ONLY ALLOWED TO MODIFY YOUR OWN POSTS");
+            throw new ForbiddenAccessException("YOU ARE ONLY ALLOWED TO MODIFY YOUR OWN POSTS");
         }
         return foundArticle;
     }

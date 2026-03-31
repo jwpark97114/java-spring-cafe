@@ -2,8 +2,11 @@ package com.codesquad.service;
 
 import com.codesquad.cafeRepo.InterfaceRepo;
 import com.codesquad.cafeRepo.JpaUserRepo;
+import com.codesquad.exceptions.AuthenticationException;
+import com.codesquad.exceptions.ForbiddenAccessException;
 import com.codesquad.user.User;
 import com.codesquad.user.UserUpdateForm;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -30,31 +33,39 @@ public class UserService {
         return this.repo.findAll();
     }
 
-    public boolean updateUserProfile(String userId, UserUpdateForm form){
+    public User login(User modelUser){
+
+        String userId = modelUser.getId();
+        String password = modelUser.getPassword();
+
         User user = this.repo.getUserById(userId);
-        if(user.getPassword().equals(form.getPassword())){
-            user.setName(form.getName());
-            user.setEmail(form.getEmail());
-            user.setPassword(form.getNewPassword());
-            this.repo.save(user);
-            return true;
+
+        if(user == null || !(user.getPassword().equals(password)) ){
+            throw new AuthenticationException( "User Credentials Does Not Match");
         }
-        return false;
+
+        return user;
     }
 
-    public boolean verifyUserCredentials(User supposedUser){
+    public User findUserForUpdate(String id, User user){
+        User targetUser = this.repo.getUserById(id);
+        if(targetUser == null || !(targetUser.equals(user))){
+            throw new ForbiddenAccessException("YOU CANNOT MODIFY OTHER'S PROFILE");
+        }
+        return targetUser;
+    }
 
-        String userId = supposedUser.getId();
-        String password = supposedUser.getPassword();
-
+    public User updateUserProfile(String userId, UserUpdateForm form){
         User user = this.repo.getUserById(userId);
-        if(user == null){
-            return false;
+
+        if(user == null || !(form.getPassword().equals(user.getPassword()))){
+            throw new ForbiddenAccessException("CHECK YOUR USER CREDENTIALS");
         }
-        if(user.getPassword().equals(password)){
-            return true;
-        }
-        return false;
+        user.setName(form.getName());
+        user.setPassword(form.getNewPassword());
+        user.setEmail(form.getEmail());
+        this.repo.save(user);
+        return user;
     }
 
 }
