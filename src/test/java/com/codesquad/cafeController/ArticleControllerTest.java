@@ -65,6 +65,6 @@ public class ArticleControllerTest {
                 .andExpect(redirectedUrl("/qna/"));
 
         // 3. Verify that the service layer was actually called to save the article
-        verify(articleService).putNewArticle(any(Article.class));
+        verify(articleService).putNewArticle(any(User.class),any(Article.class));
     }
 }

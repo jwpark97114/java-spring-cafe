@@ -7,7 +7,6 @@ import com.codesquad.service.ArticleService;
 import com.codesquad.service.ReplyService;
 import com.codesquad.service.UserService;
 import com.codesquad.user.LoginInterceptor;
-import com.codesquad.user.LoginRequired;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,7 +46,7 @@ public class SpringConfig implements WebMvcConfigurer {
 
      @Bean
     public ReplyService replyService(){
-        return new ReplyService(jpaReplyRepo);
+        return new ReplyService(jpaReplyRepo, articleService());
      }
 
 

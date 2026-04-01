@@ -3,14 +3,18 @@ package com.codesquad.reply;
 import com.codesquad.article.Article;
 import com.codesquad.user.User;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
 @Entity
+@SQLRestriction("deleted = false")
+@SQLDelete(sql = "UPDATE replies SET deleted = true WHERE id = ?")
 @Table(name="replies")
 public class Reply {
-    @Id @GeneratedValue
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @ManyToOne
@@ -25,6 +29,8 @@ public class Reply {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    private boolean deleted = false;
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -64,5 +70,13 @@ public class Reply {
 
     public void setReply(String reply) {
         this.reply = reply;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }

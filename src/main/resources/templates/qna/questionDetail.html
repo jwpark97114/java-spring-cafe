@@ -142,6 +142,20 @@
             margin: 0;
             padding: 0;
         }
+        /* Ensure the form doesn't force a new line */
+        .delete-comment-form {
+            display: inline-flex;
+            margin: 0;
+            padding: 0;
+            align-items: center;
+        }
+
+        /* Adjust the gap specifically for the items inside the actions header */
+        .comment-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem; /* Creates a nice space between the time and the button */
+        }
         /* --- Comments Section Styles --- */
         .comments-section {
             margin-top: 3rem;
@@ -237,77 +251,181 @@
             text-align: left;
         }
     </style>
+    <script th:inline="javascript">
+        // Thymeleaf writes the logged-in user's ID into this JS variable
+        var logInUserId = [[${session.currentUser != null ? session.currentUser.id : null}]];
+    </script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
 <div th:replace="~{fragments/header :: main-header}"></div>
 <div class="main-content">
     <div class="article-card">
 
-        <div th:if="${errorMessage}" class="error-banner">
-            <span th:text="${errorMessage}"> ERROR MESSAGE</span>
-        </div>
-
         <div class="article-meta">
             Question #<span th:text="${article.id}">1</span>
             By <span th:text="${article.author}" style="color: #4e342e;">doe</span>
         </div>
-
         <h1 th:text="${article.title}">Sample Question Title</h1>
+        <div class="article-content" th:text="${article.content}">Content here</div>
 
-        <div class="article-content" th:text="${article.content}">
-            Here is where the detailed explanation of the question will go.
-        </div>
-
-        <div class="action-buttons">
-            <a href="/qna/" class="btn-return">← Back</a>
-
-            <a th:href="@{/qna/{id}/edit(id=${article.id})}" class="btn-edit">Edit</a>
-
-            <form th:action="@{/qna/{id}/delete(id=${article.id})}" method="post" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this question? This cannot be undone.');">
-                <input type="hidden" name="_method" value="DELETE" />
-                <button type="submit" class="btn-delete">Delete</button>
-            </form>
-        </div>
         <div class="comments-section">
             <h2>Comments</h2>
 
-            <form class="comment-form" th:action="@{/qna/{id}/comments(id=${article.id})}" method="post">
+            <form class="comment-form" th:action="@{/api/comment/{id}(id=${article.id})}" method="post">
                 <textarea name="commentContent" placeholder="Leave a comment..." required></textarea>
                 <button type="submit" class="btn-comment">Post Comment</button>
             </form>
 
             <div class="comment-list">
-                <div class="comment-card" th:each="comment : ${comments}">
-
-                    <div class="comment-header">
-                        <span class="comment-author" th:text="${comment.user.id}">Comment Author</span>
-
-                        <div class="comment-actions" style="display: flex; align-items: center; gap: 1rem;">
-                            <span class="comment-time" th:text="${comment.createdAt}">Commented At</span>
-
-                            <form th:if="${session.currentUser != null and session.currentUser.id == comment.user.id}"
-                                  th:action="@{/qna/{articleId}/comments/{commentId}/delete(articleId=${article.id}, commentId=${comment.id})}"
-                                  method="post"
-                                  class="delete-form"
-                                  onsubmit="return confirm('Are you sure you want to delete this comment?');">
-                                <input type="hidden" name="_method" value="DELETE" />
-                                <button type="submit" class="btn-delete-comment">Delete</button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="comment-body" th:text="${comment.reply}">
-                        This is a sample comment body.
-                    </div>
-                </div>
 
                 <div th:if="${comments == null or #lists.isEmpty(comments)}" class="no-comments">
-                    No comments yet. Be the first to share your thoughts!
+                    No comments yet.
                 </div>
             </div>
         </div>
-
     </div>
 </div>
+
+<script type="text/template" id="commentTemplate">
+    <div class="comment-card" id="reply-{3}">
+        <div class="comment-header">
+            <span class="comment-author">{0}</span>
+            <div class="comment-actions">
+                <span class="comment-time">{1}</span>
+                <form class="delete-comment-form" action="/api/comment/{4}/{3}" method="POST">
+                    <button type="submit" class="btn-delete-comment" style="display:none;">Delete</button>
+                </form>
+            </div>
+        </div>
+        <div class="comment-body">{2}</div>
+    </div>
+</script>
+
+<script>
+    // Custom string formatter to mimic the one in your instructions
+    String.prototype.format = function() {
+        var args = arguments;
+        return this.replace(/{(\d+)}/g, function(match, number) {
+            return typeof args[number] != 'undefined' ? args[number] : match;
+        });
+    };
+    // 1. Install the "Sensor" on the comment list
+    // We target the .comment-list container and listen for clicks on the delete button
+    $(".comment-list").on("click", ".btn-delete-comment", function(e) {
+        e.preventDefault(); // Stop the page from refreshing
+
+        var deleteBtn = $(this); // The specific button that was clicked
+        var url = deleteBtn.closest("form").attr("action"); // Grab the URL from the parent form
+
+        // 2. Perform the AJAX Delete
+        $.ajax({
+            type: 'delete', // Using the DELETE HTTP method
+            url: url,
+            dataType: 'json', // Expecting a JSON response from your RestController
+            error: function() {
+                alert("Error: You are not authorized to delete this comment.");
+            },
+            success: function(data) {
+                console.log("Delete result:", data);
+
+                // 3. If the server says it's valid, remove the element
+                // We find the nearest card and remove it from the screen
+                deleteBtn.closest(".comment-card").remove();
+            }
+        });
+    });
+
+    $(document).ready(function() {
+        // 1. Load all existing comments immediately on page load
+        loadComments();
+
+        // 2. Existing "Add Comment" click handler
+        $(".btn-comment").click(addComment);
+
+        function loadComments() {
+            var articleId = [[${article.id}]]; // Thymeleaf still helps us get the ID once
+
+            $.ajax({
+                type: 'get',
+                url: '/api/comment/' + articleId, // Your new GET endpoint
+                dataType: 'json',
+                success: function(data) {
+                    console.log("Loaded existing comments:", data);
+                    // Loop through the list of DTOs and render each one
+                    data.forEach(function(comment) {
+                        renderComment(comment);
+                    });
+                }
+            });
+        }
+
+        function renderComment(data) {
+            // 1. Convert the ISO string into a human-friendly format
+            // Example: "2026-04-01T17:45" -> "2026. 04. 01. 17:45"
+            var dateObj = new Date(data.createdAt);
+            var humanTime = dateObj.toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false // Set to true if you want AM/PM
+            });
+
+            var templateHtml = $("#commentTemplate").html();
+            var formattedHtml = templateHtml.format(
+                data.user_id,   // {0}
+                humanTime,      // {1} - Now using the formatted string!
+                data.reply,     // {2}
+                data.id,         // {3}
+                articleId
+            );
+
+            var commentElement = $(formattedHtml);
+
+            // Security Check: Use the variable we created to compare IDs
+            if (logInUserId !== null && logInUserId === data.user_id) {
+                commentElement.find(".btn-delete-comment").show();
+            }
+
+            $(".comment-list").append(commentElement);
+        }
+        // Step 1: Register click handler
+
+        function addComment(e) {
+            e.preventDefault(); // Step 2: Stop auto-submit
+
+            var form = $(".comment-form");
+            var queryString = form.serialize(); // Step 2: Bundle data
+            var url = form.attr("action"); // Get the URL from Thymeleaf's action
+
+            // Step 3: Send AJAX request
+            $.ajax({
+                type: 'post',
+                url: url,
+                data: queryString,
+                dataType: 'json',
+                error: function() { alert("Error posting comment."); },
+                success: function(data) {
+                    console.log("Success:", data); // Step 5: Check response
+
+                    // Step 6: Create HTML from template and prepend
+                    var templateHtml = $("#commentTemplate").html();
+                    var formattedHtml = templateHtml.format(
+                        data.user_id,   // {0} - from ReplyDTO
+                        data.createdAt, // {1}
+                        data.reply      // {2}
+                    );
+
+                    $(".comment-list").append(formattedHtml);
+                    $("textarea[name=commentContent]").val(""); // Clear input
+                    $(".no-comments").remove(); // Remove "No comments" text if it exists
+                }
+            });
+        }
+    });
+</script>
+
 </body>
 </html>
