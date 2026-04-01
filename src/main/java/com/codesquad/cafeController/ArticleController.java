@@ -80,22 +80,6 @@ public class ArticleController {
         return "redirect:/qna/";
     }
 
-    @LoginRequired
-    @PostMapping("/{id}/comments")
-    public String addComment(@PathVariable int id, @SessionAttribute(value="currentUser", required = false) User user, @RequestParam(name = "commentContent") String content){
-        Article article = this.service.findArticleById(id);
-        this.replyService.addReply(article, user, content);
-        return "redirect:/qna/"+id;
-    }
-
-    @LoginRequired
-    @DeleteMapping("/{articleId}/comments/{commentId}/delete")
-    public String removeComment(@PathVariable int articleId, @PathVariable long commentId, @SessionAttribute(name = "currentUser", required = true) User user){
-        Reply targetReply = this.replyService.findReplyToEditById(commentId, user);
-        this.replyService.removeReply(targetReply.getId());
-        return "redirect:/qna/"+articleId;
-    }
-
 }
 
 // The point to improve is not making lazy fetch on User class in article

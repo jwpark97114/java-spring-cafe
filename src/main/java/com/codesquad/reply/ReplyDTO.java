@@ -53,4 +53,12 @@ public class ReplyDTO {
     public void setReply(String reply) {
         this.reply = reply;
     }
+
+    public int getArticleId() {
+        return articleId;
+    }
+
+    public void setArticleId(int articleId) {
+        this.articleId = articleId;
+    }
 }
