@@ -302,125 +302,106 @@
     </div>
 </script>
 
-<script>
-    // Custom string formatter to mimic the one in your instructions
+<script th:inline="javascript">
+    // 1. GLOBAL VARIABLES: Defined at the top so every function can see them
+    var logInUserId = [[${session.currentUser != null ? session.currentUser.id : null}]];
+    var articleId = [[${article.id}]];
+
+    // Standard string formatter
     String.prototype.format = function() {
         var args = arguments;
         return this.replace(/{(\d+)}/g, function(match, number) {
             return typeof args[number] != 'undefined' ? args[number] : match;
         });
     };
-    // 1. Install the "Sensor" on the comment list
-    // We target the .comment-list container and listen for clicks on the delete button
-    $(".comment-list").on("click", ".btn-delete-comment", function(e) {
-        e.preventDefault(); // Stop the page from refreshing
-
-        var deleteBtn = $(this); // The specific button that was clicked
-        var url = deleteBtn.closest("form").attr("action"); // Grab the URL from the parent form
-
-        // 2. Perform the AJAX Delete
-        $.ajax({
-            type: 'delete', // Using the DELETE HTTP method
-            url: url,
-            dataType: 'json', // Expecting a JSON response from your RestController
-            error: function() {
-                alert("Error: You are not authorized to delete this comment.");
-            },
-            success: function(data) {
-                console.log("Delete result:", data);
-
-                // 3. If the server says it's valid, remove the element
-                // We find the nearest card and remove it from the screen
-                deleteBtn.closest(".comment-card").remove();
-            }
-        });
-    });
 
     $(document).ready(function() {
-        // 1. Load all existing comments immediately on page load
+        // Start the page by loading existing data
         loadComments();
 
-        // 2. Existing "Add Comment" click handler
+        // Listen for the "Post" button
         $(".btn-comment").click(addComment);
+    });
 
-        function loadComments() {
-            var articleId = [[${article.id}]]; // Thymeleaf still helps us get the ID once
+    // 2. THE UNIFIED RENDERER: The only place where HTML is actually built
+    function renderComment(data, method = "append") {
+        // A. Format the date into something human
+        var dateObj = new Date(data.createdAt);
+        var humanTime = dateObj.toLocaleString('ko-KR', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
 
-            $.ajax({
-                type: 'get',
-                url: '/api/comment/' + articleId, // Your new GET endpoint
-                dataType: 'json',
-                success: function(data) {
-                    console.log("Loaded existing comments:", data);
-                    // Loop through the list of DTOs and render each one
-                    data.forEach(function(comment) {
-                        renderComment(comment);
-                    });
-                }
-            });
+        // B. Fill the template with ALL 5 required parameters
+        var templateHtml = $("#commentTemplate").html();
+        var formattedHtml = templateHtml.format(
+            data.user_id,   // {0} - Author
+            humanTime,      // {1} - Formatted Date
+            data.reply,     // {2} - Content
+            data.id,        // {3} - Reply ID for the URL
+            articleId       // {4} - Article ID for the URL
+        );
+
+        // C. Convert string to jQuery object and perform security check
+        var commentElement = $(formattedHtml);
+        if (logInUserId !== null && logInUserId === data.user_id) {
+            commentElement.find(".btn-delete-comment").show();
         }
 
-        function renderComment(data) {
-            // 1. Convert the ISO string into a human-friendly format
-            // Example: "2026-04-01T17:45" -> "2026. 04. 01. 17:45"
-            var dateObj = new Date(data.createdAt);
-            var humanTime = dateObj.toLocaleString('ko-KR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false // Set to true if you want AM/PM
-            });
-
-            var templateHtml = $("#commentTemplate").html();
-            var formattedHtml = templateHtml.format(
-                data.user_id,   // {0}
-                humanTime,      // {1} - Now using the formatted string!
-                data.reply,     // {2}
-                data.id,         // {3}
-                articleId
-            );
-
-            var commentElement = $(formattedHtml);
-
-            // Security Check: Use the variable we created to compare IDs
-            if (logInUserId !== null && logInUserId === data.user_id) {
-                commentElement.find(".btn-delete-comment").show();
-            }
-
+        // D. Inject into the page
+        if (method === "prepend") {
+            $(".comment-list").prepend(commentElement);
+        } else {
             $(".comment-list").append(commentElement);
         }
-        // Step 1: Register click handler
+    }
 
-        function addComment(e) {
-            e.preventDefault(); // Step 2: Stop auto-submit
+    // 3. LOAD: Fetches history from MySQL
+    function loadComments() {
+        $.ajax({
+            type: 'get',
+            url: '/api/comment/' + articleId,
+            dataType: 'json',
+            success: function(data) {
+                console.log("Loading history:", data);
+                data.forEach(function(comment) {
+                    renderComment(comment, "append");
+                });
+            }
+        });
+    }
 
-            var form = $(".comment-form");
-            var queryString = form.serialize(); // Step 2: Bundle data
-            var url = form.attr("action"); // Get the URL from Thymeleaf's action
+    // 4. POST: Sends new data to MySQL
+    function addComment(e) {
+        e.preventDefault();
+        var form = $(".comment-form");
 
-            // Step 3: Send AJAX request
+        $.ajax({
+            type: 'post',
+            url: form.attr("action"),
+            data: form.serialize(),
+            dataType: 'json',
+            error: function() { alert("Error: Could not post comment."); },
+            success: function(data) {
+                // Instead of manual code, we use our unified renderer!
+                renderComment(data, "append");
+
+                $("textarea[name=commentContent]").val("");
+                $(".no-comments").remove();
+            }
+        });
+    }
+
+    // 5. DELETE: Background removal
+    $(".comment-list").on("click", ".btn-delete-comment", function(e) {
+        e.preventDefault();
+        var deleteBtn = $(this);
+        if (confirm("Delete this comment?")) {
             $.ajax({
-                type: 'post',
-                url: url,
-                data: queryString,
-                dataType: 'json',
-                error: function() { alert("Error posting comment."); },
-                success: function(data) {
-                    console.log("Success:", data); // Step 5: Check response
-
-                    // Step 6: Create HTML from template and prepend
-                    var templateHtml = $("#commentTemplate").html();
-                    var formattedHtml = templateHtml.format(
-                        data.user_id,   // {0} - from ReplyDTO
-                        data.createdAt, // {1}
-                        data.reply      // {2}
-                    );
-
-                    $(".comment-list").append(formattedHtml);
-                    $("textarea[name=commentContent]").val(""); // Clear input
-                    $(".no-comments").remove(); // Remove "No comments" text if it exists
+                type: 'delete',
+                url: deleteBtn.closest("form").attr("action"),
+                success: function() {
+                    deleteBtn.closest(".comment-card").remove();
                 }
             });
         }

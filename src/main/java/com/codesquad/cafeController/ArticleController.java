@@ -1,16 +1,19 @@
 package com.codesquad.cafeController;
 
 import com.codesquad.article.Article;
-import com.codesquad.reply.Reply;
+import com.codesquad.manager.PagingManager;
 import com.codesquad.service.ArticleService;
 import com.codesquad.service.ReplyService;
 import com.codesquad.user.LoginRequired;
 import com.codesquad.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/qna")
@@ -26,10 +29,17 @@ public class ArticleController {
     }
 
     @GetMapping("/")
-    public String getQna(Model model){
-        model.addAttribute("articles", service.getAllArticles());
+    public String getQna(@RequestParam(defaultValue = "1") int page,  Model model){
+        Page<Article> articlePage = this.service.getArticlesPage(page - 1, 15);
+        List<Article> articles = articlePage.getContent();
+        PagingManager pageManager = new PagingManager(page, articlePage.getTotalPages(), 5);
+        model.addAttribute("articles", articles);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pagingManager", pageManager);
         return "qna/qnaList";
     }
+
+
 
     @LoginRequired
     @GetMapping("/question")
@@ -48,7 +58,7 @@ public class ArticleController {
     }
 
     @LoginRequired(message = "Please Log In to Read Questions")
-    @GetMapping("/{articleId}")
+    @GetMapping("/article/{articleId}")
     public String getArticleDetail(@PathVariable int articleId, Model model){
         model.addAttribute("article", service.findArticleById(articleId));
         model.addAttribute("comments", replyService.findRepliesForArticle(articleId));

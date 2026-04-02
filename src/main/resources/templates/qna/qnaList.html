@@ -119,6 +119,45 @@
         .btn-primary:hover {
             background-color: #5d4037;
         }
+        /* --- Pagination Bar Styles --- [cite: 2026-04-02] */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 3rem;
+            padding-bottom: 2rem;
+        }
+
+        .page-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            text-decoration: none;
+            color: #8d6e63;
+            background: white;
+            border: 1px solid #d7ccc8;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .page-link:hover {
+            background-color: #efebe9;
+            color: #5d4037;
+        }
+
+        .active-page {
+            background-color: #8d6e63 !important;
+            color: white !important;
+            border-color: #8d6e63;
+        }
+
+        .arrow-link {
+            padding: 0 1rem;
+            width: auto; /* Arrows need more width than numbers */
+        }
         .back-link:hover { color: #5d4037; text-decoration: underline; }
     </style>
 </head>
@@ -143,11 +182,29 @@
         <p>No questions have been asked yet. Be the first!</p>
     </div>
 
-    <a th:href="@{/qna/{id}(id=${article.id})}"  class="article-card" th:each="article : ${articles}" >
+    <a th:href="@{/qna/article/{id}(id=${article.id})}"  class="article-card" th:each="article : ${articles}" >
         <div class="article-meta" th:text="'Question #' + ${article.id}">Question #ID</div>
         <h2 class="article-title" th:text="${article.title}">Sample Title</h2>
     </a>
 
+</div>
+
+<div class="pagination" th:if="${pagingManager != null}">
+
+    <a th:if="${pagingManager.hasPreviousGroup}"
+       th:href="@{/qna/(page=${pagingManager.startPage - 1})}"
+       class="page-link arrow-link">&laquo; Prev</a>
+
+    <th:block th:each="i : ${#numbers.sequence(pagingManager.startPage, pagingManager.endPage)}">
+        <a th:href="@{/qna/(page=${i})}"
+           th:text="${i}"
+           class="page-link"
+           th:classappend="${i == currentPage} ? 'active-page' : ''">1</a>
+    </th:block>
+
+    <a th:if="${pagingManager.hasNextGroup}"
+       th:href="@{/qna/(page=${pagingManager.endPage + 1})}"
+       class="page-link arrow-link">Next &raquo;</a>
 </div>
 
 <a href="/" class="back-link">← Return Home</a>

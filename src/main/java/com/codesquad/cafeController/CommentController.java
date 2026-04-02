@@ -6,8 +6,6 @@ import com.codesquad.user.LoginRequired;
 import com.codesquad.user.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
