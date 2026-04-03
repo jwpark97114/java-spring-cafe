@@ -4,6 +4,10 @@ import com.codesquad.reply.ReplyDTO;
 import com.codesquad.service.ReplyService;
 import com.codesquad.user.LoginRequired;
 import com.codesquad.user.User;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -21,8 +25,9 @@ public class CommentController {
 
     @LoginRequired
     @GetMapping("/{articleId}")
-    public ResponseEntity<List<ReplyDTO>> getCommentsForArticle(@PathVariable int articleId){
-        return ResponseEntity.status(200).body(this.replyService.findRepliesDTOForArticle(articleId));
+    public ResponseEntity<Slice<ReplyDTO>> getCommentsForArticle(@PathVariable int articleId, @RequestParam(defaultValue = "0") int page){
+
+        return ResponseEntity.status(200).body(this.replyService.findReplySliceByArticleId(articleId,page));
     }
 
     @LoginRequired

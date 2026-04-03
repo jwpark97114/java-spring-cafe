@@ -61,7 +61,6 @@ public class ArticleController {
     @GetMapping("/article/{articleId}")
     public String getArticleDetail(@PathVariable int articleId, Model model){
         model.addAttribute("article", service.findArticleById(articleId));
-        model.addAttribute("comments", replyService.findRepliesForArticle(articleId));
         return "qna/questionDetail";
     }
 

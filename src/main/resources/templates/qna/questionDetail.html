@@ -278,10 +278,12 @@
             </form>
 
             <div class="comment-list">
+            </div>
 
-                <div th:if="${comments == null or #lists.isEmpty(comments)}" class="no-comments">
-                    No comments yet.
-                </div>
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="btn-load-more" class="btn-return" style="display: none; background-color: #6d4c41; border: none; cursor: pointer;">
+                    View More Comments (+5)
+                </button>
             </div>
         </div>
     </div>
@@ -305,7 +307,45 @@
 <script th:inline="javascript">
     // 1. GLOBAL VARIABLES: Defined at the top so every function can see them
     var logInUserId = [[${session.currentUser != null ? session.currentUser.id : null}]];
+    // 1. GLOBAL STATE: Keep track of the current page [cite: 2026-04-02]
+    var currentCommentPage = 0;
     var articleId = [[${article.id}]];
+
+    $(document).ready(function() {
+        // Load the first 5 comments (Page 0)
+        loadComments();
+
+        // Listen for the "Post" button
+        $(".btn-comment").click(addComment);
+
+        // NEW: Listen for the "Load More" button [cite: 2026-04-02]
+        $("#btn-load-more").click(function() {
+            loadComments();
+        });
+    });
+
+    // 2. UPDATED LOAD FUNCTION: Handles Slice metadata [cite: 2026-03-14, 2026-04-02]
+    function loadComments() {
+        $.ajax({
+            type: 'get',
+            url: `/api/comment/${articleId}?page=${currentCommentPage}`, // Pass the page number [cite: 2026-04-02]
+            dataType: 'json',
+            success: function(data) {
+                data.content.forEach(function(comment) {
+                    renderComment(comment, "append");
+                });
+
+                currentCommentPage++;
+
+                // 'hasNext' doesn't exist in the JSON; use '!data.last' instead [cite: 2026-04-02]
+                if (!data.last) {
+                    $("#btn-load-more").show();
+                } else {
+                    $("#btn-load-more").hide();
+                }
+            }
+        });
+    }
 
     // Standard string formatter
     String.prototype.format = function() {
@@ -314,14 +354,6 @@
             return typeof args[number] != 'undefined' ? args[number] : match;
         });
     };
-
-    $(document).ready(function() {
-        // Start the page by loading existing data
-        loadComments();
-
-        // Listen for the "Post" button
-        $(".btn-comment").click(addComment);
-    });
 
     // 2. THE UNIFIED RENDERER: The only place where HTML is actually built
     function renderComment(data, method = "append") {
@@ -356,20 +388,6 @@
         }
     }
 
-    // 3. LOAD: Fetches history from MySQL
-    function loadComments() {
-        $.ajax({
-            type: 'get',
-            url: '/api/comment/' + articleId,
-            dataType: 'json',
-            success: function(data) {
-                console.log("Loading history:", data);
-                data.forEach(function(comment) {
-                    renderComment(comment, "append");
-                });
-            }
-        });
-    }
 
     // 4. POST: Sends new data to MySQL
     function addComment(e) {
