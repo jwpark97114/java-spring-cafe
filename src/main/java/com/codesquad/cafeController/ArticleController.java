@@ -20,12 +20,10 @@ import java.util.List;
 public class ArticleController {
 
     private final ArticleService service;
-    private final ReplyService replyService;
 
     @Autowired
     public ArticleController(ArticleService as, ReplyService rs){
         this.service = as;
-        this.replyService=rs;
     }
 
     @GetMapping("/")
